@@ -137,7 +137,7 @@ public class OAuth2Module: AuthzModule {
             } else {
                 UIApplication.sharedApplication().openURL(url)
             }
-            #endifara
+            #endif
         }
     }
 
