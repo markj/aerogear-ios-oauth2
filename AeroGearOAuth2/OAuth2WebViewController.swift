@@ -18,6 +18,9 @@
 import Foundation
 
 import UIKit
+
+#if os(iOS)
+    
 /**
 OAuth2WebViewController is a UIViewController to be used when the Oauth2 flow used an embedded view controller 
 rather than an external browser approach.
@@ -51,3 +54,5 @@ class OAuth2WebViewController: UIViewController, UIWebViewDelegate {
         webView.loadRequest(req)
     }
 }
+#endif // #if os(iOS)
+
