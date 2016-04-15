@@ -38,6 +38,8 @@ public enum TokenType: String {
 A handy Keychain wrapper. It saves your OAuth2 tokens using WhenPasscodeSet ACL.
 */
 public class KeychainWrap {
+    //For tvOS we can't have the device passcode locked.. so we need to weaken the security accessbility
+    let keychainSecurityLevel = TARGET_OS_TV==1 ? kSecAttrAccessibleWhenUnlockedThisDeviceOnly  : kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
     
     /**
     The service id. By default set to apple bundle id.
@@ -85,7 +87,7 @@ public class KeychainWrap {
         keychainQuery[kSecClass as String] = kSecClassGenericPassword
         keychainQuery[kSecAttrService as String] = self.serviceIdentifier
         keychainQuery[kSecAttrAccount as String] = key + "_" + tokenType.rawValue
-        keychainQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+        keychainQuery[kSecAttrAccessible as String] = keychainSecurityLevel
 
         // Search for the keychain items
         let statusSearch: OSStatus = SecItemCopyMatching(keychainQuery, nil)
@@ -132,7 +134,7 @@ public class KeychainWrap {
         keychainQuery[kSecClass as String] = kSecClassGenericPassword
         keychainQuery[kSecAttrService as String] = self.serviceIdentifier
         keychainQuery[kSecAttrAccount as String] = key + "_" + tokenType.rawValue
-        keychainQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+        keychainQuery[kSecAttrAccessible as String] = keychainSecurityLevel
 
         let statusDelete: OSStatus = SecItemDelete(keychainQuery)
         
@@ -154,7 +156,7 @@ public class KeychainWrap {
         keychainQuery[kSecAttrService as String] = self.serviceIdentifier
         keychainQuery[kSecAttrAccount as String] = userAccount + "_" + tokenType.rawValue
         keychainQuery[kSecReturnData as String] = true
-        keychainQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly
+        keychainQuery[kSecAttrAccessible as String] = keychainSecurityLevel
 
         
         var dataTypeRef: Unmanaged<AnyObject>?
