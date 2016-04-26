@@ -137,6 +137,9 @@ public class OAuth2Module: AuthzModule {
             } else {
                 UIApplication.sharedApplication().openURL(url)
             }
+            #else
+                let error = NSError(domain:AGAuthzErrorDomain, code:0, userInfo:["NSLocalizedDescriptionKey": "User cancelled authorization."])
+                completionHandler(nil, error)
             #endif
         }
     }
