@@ -50,8 +50,10 @@ public class OAuth2Module: AuthzModule {
     var applicationLaunchNotificationObserver: NSObjectProtocol?
     var applicationDidBecomeActiveNotificationObserver: NSObjectProtocol?
     var state: AuthorizationState
-    public var webView: OAuth2WebViewController?
-
+    #if os(iOS)
+        public var webView: OAuth2WebViewController?
+    #endif
+    
     /**
     Initialize an OAuth2 module.
 
@@ -74,7 +76,9 @@ public class OAuth2Module: AuthzModule {
 
         self.config = config
         if config.isWebView {
+            #if os(iOS)
             self.webView = OAuth2WebViewController()
+            #endif
         }
         self.http = Http(baseURL: config.baseURL, requestSerializer: requestSerializer, responseSerializer:  responseSerializer)
         self.state = .AuthorizationStateUnknown
@@ -93,9 +97,11 @@ public class OAuth2Module: AuthzModule {
         // from the server.
         applicationLaunchNotificationObserver = NSNotificationCenter.defaultCenter().addObserverForName(AGAppLaunchedWithURLNotification, object: nil, queue: nil, usingBlock: { (notification: NSNotification!) -> Void in
             self.extractCode(notification, completionHandler: completionHandler)
+            #if os(iOS)
             if ( self.webView != nil ) {
                 UIApplication.sharedApplication().keyWindow?.rootViewController?.dismissViewControllerAnimated(true, completion: nil)
             }
+            #endif
         })
 
         // register to receive notification when the application becomes active so we
@@ -130,12 +136,17 @@ public class OAuth2Module: AuthzModule {
             let url = NSURL(string:computedUrl.absoluteString + params)
         #endif
         if let url = url {
+            #if os(iOS)
             if self.webView != nil {
                 self.webView!.targetURL = url
                 config.webViewHandler(self.webView!, completionHandler: completionHandler)
             } else {
                 UIApplication.sharedApplication().openURL(url)
             }
+            #else
+                let error = NSError(domain:AGAuthzErrorDomain, code:0, userInfo:["NSLocalizedDescriptionKey": "User cancelled authorization."])
+                completionHandler(nil, error)
+            #endif
         }
     }
 
