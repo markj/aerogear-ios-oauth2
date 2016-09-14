@@ -1,6 +1,9 @@
 # aerogear-ios-oauth2 [![Build Status](https://travis-ci.org/aerogear/aerogear-ios-oauth2.png)](https://travis-ci.org/aerogear/aerogear-ios-oauth2)
 
-> This module currently build with Xcode 7 and supports iOS8, iOS9.
+[![CocoaPods Compatible](https://img.shields.io/cocoapods/v/AeroGearOAuth2.svg)](https://img.shields.io/cocoapods/v/AeroGearOAuth2.svg)
+[![Platform](https://img.shields.io/cocoapods/p/AeroGearOAuth2.svg?style=flat)](http://cocoadocs.org/docsets/AeroGearOAuth2)
+
+> This module currently build with Xcode 7 / Xcode 8 and supports iOS8, iOS9, iOS10.
 
 OAuth2 Client based on [aerogear-ios-http](https://github.com/aerogear/aerogear-ios-http). 
 Taking care of: 
@@ -11,7 +14,7 @@ Taking care of:
 * (implicit or explicit) refresh tokens, 
 * revoke tokens,
 * permanent secure storage,
-* adaptable to OAuth2 specific providers. Existing extensions: Google, Facebook, [Keycloak 1.5.0.Final](http://keycloak.jboss.org/) etc...
+* adaptable to OAuth2 specific providers. Existing extensions: Google, Facebook, [Keycloak 1.9.3.Final](http://keycloak.jboss.org/) etc...
 * openID Connect login
 
 100% Swift 2.0.
@@ -29,12 +32,12 @@ Taking care of:
 
 #### OAuth2 grant for GET with a predefined config like Facebook
 ```swift
-var Http = Http() 						// [1]
+let http = Http() 						// [1]
 let facebookConfig = FacebookConfig(	// [2]
     clientId: "YYY",
     clientSecret: "XXX",
     scopes:["photo_upload, publish_actions"])
-var oauth2Module = AccountManager.addFacebookAccount(facebookConfig)  // [3]
+let oauth2Module = AccountManager.addFacebookAccount(facebookConfig)  // [3]
 http.authzModule = oauth2Module			// [4]
 http.request(.GET, path: "/get", completionHandler: {(response, error) in	// [5]
 	// handle response
@@ -52,13 +55,13 @@ See full description in [aerogear.org](https://aerogear.org/docs/guides/aerogear
 
 #### OpenID Connect with Keycloak
 ```swift
-var Http = Http()
+let http = Http()
 let keycloakConfig = KeycloakConfig(
     clientId: "sharedshoot-third-party",
     host: "http://localhost:8080",
     realm: "shoot-realm",
     isOpenIDConnect: true)
-var oauth2Module = AccountManager.addKeycloakAccount(keycloakConfig)
+let oauth2Module = AccountManager.addKeycloakAccount(keycloakConfig)
 http.authzModule = oauth2Module
 oauth2Module.login {(accessToken: AnyObject?, claims: OpenIDClaim?, error: NSError?) in // [1]
     // Do your own stuff here

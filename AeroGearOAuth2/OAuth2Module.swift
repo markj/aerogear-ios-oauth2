@@ -50,10 +50,8 @@ public class OAuth2Module: AuthzModule {
     var applicationLaunchNotificationObserver: NSObjectProtocol?
     var applicationDidBecomeActiveNotificationObserver: NSObjectProtocol?
     var state: AuthorizationState
-    #if os(iOS)
-        var webView: OAuth2WebViewController?
-    #endif
-    
+    public var webView: OAuth2WebViewController?
+
     /**
     Initialize an OAuth2 module.
 
@@ -76,9 +74,7 @@ public class OAuth2Module: AuthzModule {
 
         self.config = config
         if config.isWebView {
-            #if os(iOS)
             self.webView = OAuth2WebViewController()
-            #endif
         }
         self.http = Http(baseURL: config.baseURL, requestSerializer: requestSerializer, responseSerializer:  responseSerializer)
         self.state = .AuthorizationStateUnknown
@@ -97,11 +93,9 @@ public class OAuth2Module: AuthzModule {
         // from the server.
         applicationLaunchNotificationObserver = NSNotificationCenter.defaultCenter().addObserverForName(AGAppLaunchedWithURLNotification, object: nil, queue: nil, usingBlock: { (notification: NSNotification!) -> Void in
             self.extractCode(notification, completionHandler: completionHandler)
-            #if os(iOS)
             if ( self.webView != nil ) {
                 UIApplication.sharedApplication().keyWindow?.rootViewController?.dismissViewControllerAnimated(true, completion: nil)
             }
-            #endif
         })
 
         // register to receive notification when the application becomes active so we
@@ -114,7 +108,7 @@ public class OAuth2Module: AuthzModule {
                 // unregister
                 self.stopObserving()
                 // ..and update state
-                self.state = .AuthorizationStateUnknown;
+                self.state = .AuthorizationStateUnknown
             }
         })
 
@@ -128,19 +122,20 @@ public class OAuth2Module: AuthzModule {
             completionHandler(nil, error)
             return
         }
-        let url = NSURL(string:computedUrl.absoluteString + params)
+        #if swift(>=2.3)
+            // this compiles on Xcode 8 / Swift 2.3 / iOS 10
+            let url = NSURL(string:computedUrl.absoluteString! + params)
+        #else
+            // this compiles on Xcode 7 / Swift 2.2 / iOS 9
+            let url = NSURL(string:computedUrl.absoluteString + params)
+        #endif
         if let url = url {
-            #if os(iOS)
             if self.webView != nil {
                 self.webView!.targetURL = url
-                UIApplication.sharedApplication().keyWindow?.rootViewController?.presentViewController(self.webView!, animated: true, completion: nil)
+                config.webViewHandler(self.webView!, completionHandler: completionHandler)
             } else {
                 UIApplication.sharedApplication().openURL(url)
             }
-            #else
-                let error = NSError(domain:AGAuthzErrorDomain, code:0, userInfo:["NSLocalizedDescriptionKey": "User cancelled authorization."])
-                completionHandler(nil, error)
-            #endif
         }
     }
 
@@ -170,7 +165,7 @@ public class OAuth2Module: AuthzModule {
                     if let newRefreshToken = unwrappedResponse["refresh_token"] as? String {
                         refreshToken = newRefreshToken
                     }
-                    
+
                     self.oauth2Session.saveAccessToken(accessToken, refreshToken: refreshToken, accessTokenExpiration: exp, refreshTokenExpiration: nil)
 
                     completionHandler(unwrappedResponse["access_token"], nil);
@@ -187,17 +182,17 @@ public class OAuth2Module: AuthzModule {
     */
     public func exchangeAuthorizationCodeForAccessToken(code: String, completionHandler: (AnyObject?, NSError?) -> Void) {
         var paramDict: [String: String] = ["code": code, "client_id": config.clientId, "redirect_uri": config.redirectURL, "grant_type":"authorization_code"]
-        
+
         if let unwrapped = config.clientSecret {
             paramDict["client_secret"] = unwrapped
         }
-        
+
         http.request(.POST, path: config.accessTokenEndpoint, parameters: paramDict, completionHandler: {(responseObject, error) in
             if (error != nil) {
                 completionHandler(nil, error)
                 return
             }
-            
+
             if let unwrappedResponse = responseObject as? [String: AnyObject] {
                 let accessToken: String = unwrappedResponse["access_token"] as! String
                 let refreshToken: String? = unwrappedResponse["refresh_token"] as? String
@@ -206,7 +201,7 @@ public class OAuth2Module: AuthzModule {
                 // expiration for refresh token is used in Keycloak
                 let expirationRefresh = unwrappedResponse["refresh_expires_in"] as? NSNumber
                 let expRefresh = expirationRefresh?.stringValue
-                
+
                 self.oauth2Session.saveAccessToken(accessToken, refreshToken: refreshToken, accessTokenExpiration: exp, refreshTokenExpiration: expRefresh)
                 completionHandler(accessToken, nil)
             }
@@ -221,7 +216,7 @@ public class OAuth2Module: AuthzModule {
     public func requestAccess(completionHandler: (AnyObject?, NSError?) -> Void) {
         if (self.oauth2Session.accessToken != nil && self.oauth2Session.tokenIsNotExpired()) {
             // we already have a valid access token, nothing more to be done
-            completionHandler(self.oauth2Session.accessToken!, nil);
+            completionHandler(self.oauth2Session.accessToken!, nil)
         } else if (self.oauth2Session.refreshToken != nil && self.oauth2Session.refreshTokenIsNotExpired()) {
             // need to refresh token
             self.refreshAccessToken(completionHandler)
@@ -230,16 +225,16 @@ public class OAuth2Module: AuthzModule {
             self.requestAuthorizationCode(completionHandler)
         }
     }
-    
+
     /**
     Gateway to provide authentication using the Authorization Code Flow with OpenID Connect.
-    
+
     :param: completionHandler A block object to be executed when the request operation finishes.
     */
     public func login(completionHandler: (AnyObject?, OpenIDClaim?, NSError?) -> Void) {
-        
+
         self.requestAccess { (response:AnyObject?, error:NSError?) -> Void in
-            
+
             if (error != nil) {
                 completionHandler(nil, nil, error)
                 return
@@ -265,11 +260,11 @@ public class OAuth2Module: AuthzModule {
                 completionHandler(nil, nil, NSError(domain: "OAuth2Module", code: 0, userInfo: ["OpenID Connect" : "No UserInfo endpoint available in config"]))
                 return
             }
-            
+
         }
 
     }
-    
+
     /**
     Request to revoke access.
 
@@ -278,9 +273,9 @@ public class OAuth2Module: AuthzModule {
     public func revokeAccess(completionHandler: (AnyObject?, NSError?) -> Void) {
         // return if not yet initialized
         if (self.oauth2Session.accessToken == nil) {
-            return;
+            return
         }
-        let paramDict:[String:String] = ["token":self.oauth2Session.accessToken!]
+        let paramDict: [String:String] = ["token":self.oauth2Session.accessToken!]
 
         http.request(.POST, path: config.revokeTokenEndpoint!, parameters: paramDict, completionHandler: { (response, error) in
             if (error != nil) {
@@ -340,11 +335,11 @@ public class OAuth2Module: AuthzModule {
         var parameters = [String: String]()
         if (queryString != nil) {
             let parameterScanner: NSScanner = NSScanner(string: queryString!)
-            var name:NSString? = nil
-            var value:NSString? = nil
+            var name: NSString? = nil
+            var value: NSString? = nil
 
             while (parameterScanner.atEnd != true) {
-                name = nil;
+                name = nil
                 parameterScanner.scanUpToString("=", intoString: &name)
                 parameterScanner.scanString("=", intoString:nil)
 
@@ -358,7 +353,7 @@ public class OAuth2Module: AuthzModule {
             }
         }
 
-        return parameters;
+        return parameters
     }
 
     deinit {
@@ -369,7 +364,7 @@ public class OAuth2Module: AuthzModule {
         // clear all observers
         if (applicationLaunchNotificationObserver != nil) {
             NSNotificationCenter.defaultCenter().removeObserver(applicationLaunchNotificationObserver!)
-            self.applicationLaunchNotificationObserver = nil;
+            self.applicationLaunchNotificationObserver = nil
         }
 
         if (applicationDidBecomeActiveNotificationObserver != nil) {
