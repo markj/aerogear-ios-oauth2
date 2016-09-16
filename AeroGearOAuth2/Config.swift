@@ -106,11 +106,13 @@ public class Config {
     /**
     A handler to allow the webview to be pushed onto the navigation controller
     */
+    #if os(iOS)
     public var webViewHandler: ((OAuth2WebViewController, completionHandler: (AnyObject?, NSError?) -> Void) -> ()) = {
         (webView, completionHandler) in
         UIApplication.sharedApplication().keyWindow?.rootViewController?.presentViewController(webView, animated: true, completion: nil)
     }
-
+    #endif
+    
     public init(base: String, authzEndpoint: String, redirectURL: String, accessTokenEndpoint: String, clientId: String, refreshTokenEndpoint: String? = nil, revokeTokenEndpoint: String? = nil, isOpenIDConnect: Bool = false, userInfoEndpoint: String? = nil, scopes: [String] = [],  clientSecret: String? = nil, accountId: String? = nil, isWebView: Bool = false) {
         self.baseURL = base
         self.authzEndpoint = authzEndpoint
